@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fruit Detection AI</title>
+<style>
+    body { font-family: Arial; text-align: center; background: #f4f4f4; }
+    h1 { margin-top: 20px; }
+    #webcam-container video { border: 3px solid #333; border-radius: 8px; margin-top: 15px; }
+    #result { font-size: 22px; font-weight: bold; margin-top: 15px; }
+</style>
+</head>
+<body>
+
+<h1>AI Fruit Detection</h1>
+<p>Show an Apple 🍎, Orange 🍊, or Banana 🍌</p>
+
+<div id="webcam-container"></div>
+<div id="result">Loading model...</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script>
+const URL = "https://teachablemachine.withgoogle.com/models/i2yd7KFOq/";
+
+let model, webcam;
+
+async function init() {
+    model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+    
+    // Create and start webcam
+    webcam = new tmImage.Webcam(300, 300, true);
+    await webcam.setup();
+    await webcam.play();
+
+    // Append video feed properly
+    document.getElementById("webcam-container").appendChild(webcam.webcam);
+
+    window.requestAnimationFrame(loop);
+}
+
+async function loop() {
+    webcam.update();  // update internal canvas
+    await predict();
+    window.requestAnimationFrame(loop);
+}
+
+async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    let best = prediction[0];
+    for (let p of prediction) {
+        if (p.probability > best.probability) best = p;
+    }
+    document.getElementById("result").innerText =
+        "Detected: " + best.className + " (" + (best.probability * 100).toFixed(1) + "%)";
+}
+
+init();
+</script>
+
+</body>
+</html>
